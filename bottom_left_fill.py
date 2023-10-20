@@ -139,16 +139,22 @@ class BottomLeftFill(object):
 
 
 if __name__ == "__main__":
-    df = pd.read_csv("data/shirts_yuanhao.csv")
-    polygons = [json.loads(row["polygon"]) for _, row in df.iterrows()]
-    scaled_polygons = [scale_polygon(polygon, 10) for polygon in polygons]
+    df = pd.read_csv("data/test_set_sorted.csv")
+    # Get polygons repeated by their corresponding num value
+    polygons = []
+    for _, row in df.iterrows():
+        num = int(row["num"])
+        polygon = json.loads(row["polygon"])
+        for _ in range(num):
+            polygons.append(polygon)
+    scaled_polygons = [scale_polygon(polygon, 0.5) for polygon in polygons]
     nfp_assistant = NFPAssistant(
         polys=scaled_polygons, store_nfp=True, get_all_nfp=True, load_history=False
     )
 
     start_time = datetime.now()
     bfl = BottomLeftFill(
-        width=1000,
+        width=600,
         length=950,
         original_polygons=scaled_polygons,
         vertical=False,
