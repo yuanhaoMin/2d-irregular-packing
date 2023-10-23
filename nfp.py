@@ -53,8 +53,7 @@ class NFP(object):
             self.nfp.append([self.stationary[3][0], self.stationary[3][1] + height])
         else:
             while self.judgeEnd() == False and i < 75:  # 大于等于75会自动退出的，一般情况是计算出错
-                # while i<7:
-                # print("########第",i,"轮##########")
+                # print("########第", i, "轮##########")
                 touching_edges = self.detectTouching()
                 all_vectors = self.potentialVector(touching_edges)
                 if len(all_vectors) == 0:
@@ -84,7 +83,7 @@ class NFP(object):
                 i = i + 1
                 inter = Polygon(self.sliding).intersection(Polygon(self.stationary))
                 if compute_inter_area(inter) > 1:
-                    print("出现相交区域")
+                    print(f"出现相交区域, 第{i}轮")
                     self.error = -4  # 出现相交区域
                     break
 

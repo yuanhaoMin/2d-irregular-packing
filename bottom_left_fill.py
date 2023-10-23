@@ -139,7 +139,7 @@ class BottomLeftFill(object):
 
 
 if __name__ == "__main__":
-    df = pd.read_csv("data/test_set_sorted.csv")
+    df = pd.read_csv("data/test_rotated_sorted.csv")
     # Get polygons repeated by their corresponding num value
     polygons = []
     for _, row in df.iterrows():
@@ -148,14 +148,13 @@ if __name__ == "__main__":
         for _ in range(num):
             polygons.append(polygon)
     scaled_polygons = [scale_polygon(polygon, 0.5) for polygon in polygons]
+    start_time = datetime.now()
     nfp_assistant = NFPAssistant(
         polys=scaled_polygons, store_nfp=True, get_all_nfp=True, load_history=False
     )
-
-    start_time = datetime.now()
     bfl = BottomLeftFill(
         width=600,
-        length=950,
+        length=10000,
         original_polygons=scaled_polygons,
         vertical=False,
         nfp_assistant=nfp_assistant,
