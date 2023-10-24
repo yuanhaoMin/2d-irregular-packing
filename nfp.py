@@ -1,3 +1,5 @@
+import copy
+from constant.polygon_constants import BIAS
 from shapely.geometry import Polygon, Point, mapping, LineString
 from show import PltFunc
 from util.polygon_util import (
@@ -13,7 +15,6 @@ from util.polygon_util import (
     slide_poly,
     slide_to_point,
 )
-import copy
 
 
 class NFP(object):
@@ -328,10 +329,9 @@ class NFP(object):
     def judgeEnd(self):
         sliding_locus = self.sliding[self.locus_index]
         main_bt = self.start_point
-        # TODO: Use almost_equal()
         if (
-            abs(sliding_locus[0] - main_bt[0]) < 0.1
-            and abs(sliding_locus[1] - main_bt[1]) < 0.1
+            abs(sliding_locus[0] - main_bt[0]) < BIAS
+            and abs(sliding_locus[1] - main_bt[1]) < BIAS
         ):
             if self.start == True:
                 self.start = False

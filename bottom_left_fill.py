@@ -139,7 +139,7 @@ class BottomLeftFill(object):
 
 
 if __name__ == "__main__":
-    df = pd.read_csv("data/problem.csv")
+    df = pd.read_csv("data/test_rotated_sorted.csv")
     # Get polygons repeated by their corresponding num value
     polygons = []
     for _, row in df.iterrows():
