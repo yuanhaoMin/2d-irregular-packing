@@ -47,12 +47,3 @@ class PltFunc(object):
             # plt.axis([-500,1000,0,1500])
         plt.show()
         plt.clf()
-
-    def showPolys(polys):
-        for poly in polys:
-            PltFunc.addPolygon(poly)
-        PltFunc.showPlt(width=2000, height=2000)
-
-    def saveFig(name):
-        plt.savefig("figs\\" + name + ".png")
-        plt.cla()

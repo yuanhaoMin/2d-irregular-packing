@@ -23,7 +23,7 @@ class NFP(object):
         start_point_index = check_bottom(self.stationary)
         self.start_point = [poly1[start_point_index][0], poly1[start_point_index][1]]
         self.locus_index = check_top(self.sliding)
-        # 如果不加list则original_top是指针
+        # 如果不加list则original_top是指针, 这里相当于copy
         self.original_top = list(self.sliding[self.locus_index])
         slide_to_point(self.sliding, self.sliding[self.locus_index], self.start_point)
         self.start = True  # 判断是否初始
@@ -99,15 +99,15 @@ class NFP(object):
             for edge2 in sliding_edges:
                 inter = intersection(edge1, edge2)
                 if inter != []:
-                    pt = [inter[0], inter[1]]  # 交叉点
-                    edge1_bound = almost_equal(edge1[0], pt) or almost_equal(
-                        edge1[1], pt
+                    inter_pt = [inter[0], inter[1]]  # 交叉点
+                    edge1_bound = almost_equal(edge1[0], inter_pt) or almost_equal(
+                        edge1[1], inter_pt
                     )  # 是否为边界
-                    edge2_bound = almost_equal(edge2[0], pt) or almost_equal(
-                        edge2[1], pt
+                    edge2_bound = almost_equal(edge2[0], inter_pt) or almost_equal(
+                        edge2[1], inter_pt
                     )  # 是否为边界
-                    stationary_start = almost_equal(edge1[0], pt)  # 是否开始
-                    orbiting_start = almost_equal(edge2[0], pt)  # 是否开始
+                    stationary_start = almost_equal(edge1[0], inter_pt)  # 是否开始
+                    orbiting_start = almost_equal(edge2[0], inter_pt)  # 是否开始
                     touch_edges.append(
                         {
                             "edge1": edge1,
@@ -328,19 +328,17 @@ class NFP(object):
     def judgeEnd(self):
         sliding_locus = self.sliding[self.locus_index]
         main_bt = self.start_point
+        # TODO: Use almost_equal()
         if (
             abs(sliding_locus[0] - main_bt[0]) < 0.1
             and abs(sliding_locus[1] - main_bt[1]) < 0.1
         ):
             if self.start == True:
                 self.start = False
-                # print("判断是否结束：否")
                 return False
             else:
-                # print("判断是否结束：是")
                 return True
         else:
-            # print("判断是否结束：否")
             return False
 
     # 显示最终结果

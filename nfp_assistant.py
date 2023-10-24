@@ -112,7 +112,7 @@ class NFPAssistant(object):
             for i, poly1 in enumerate(self.polys):
                 for j, poly2 in enumerate(self.polys):
                     nfp = NFP(poly1, poly2).nfp
-                    # NFP(poly1,poly2).showResult()
+                    # NFP(poly1, poly2).showResult()
                     self.nfp_list[i][j] = get_slide(
                         nfp, -self.centroid_list[i][0], -self.centroid_list[i][1]
                     )

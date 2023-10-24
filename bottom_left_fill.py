@@ -69,6 +69,7 @@ class BottomLeftFill(object):
         slide_to_point(
             self.polygons[index], adjoin[refer_pt_index], differ[differ_index]
         )
+        # self.showPolys(self.polygons[: index + 1])
 
     def getBottomLeft(self, poly):
         """
@@ -108,7 +109,6 @@ class BottomLeftFill(object):
         for i in range(0, len(self.polygons)):
             PltFunc.addPolygon(self.polygons[i])
         length = max(self.width, self.contain_length)
-        # PltFunc.addLine([[self.width,0],[self.width,self.contain_height]],color="blue")
         PltFunc.showPlt(
             width=max(length, self.width), height=max(length, self.width), minus=100
         )
@@ -139,7 +139,7 @@ class BottomLeftFill(object):
 
 
 if __name__ == "__main__":
-    df = pd.read_csv("data/test_rotated_sorted.csv")
+    df = pd.read_csv("data/problem.csv")
     # Get polygons repeated by their corresponding num value
     polygons = []
     for _, row in df.iterrows():
