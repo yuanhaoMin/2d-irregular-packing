@@ -2,16 +2,10 @@ import copy
 import csv
 import json
 import pandas as pd
-import pool
 from nfp import NFP
 from shapely.geometry import Polygon
 from util.array_util import delete_redundancy, get_index_multi
 from util.polygon_util import get_point, get_slide, slide_poly
-
-
-def getNFP(poly1, poly2):  # 这个函数必须放在class外面否则多进程报错
-    nfp = NFP(poly1, poly2).nfp
-    return nfp
 
 
 class NFPAssistant(object):
@@ -53,19 +47,6 @@ class NFPAssistant(object):
             if kw["get_all_nfp"] == True and self.load_history == False:
                 self.getAllNFP()
 
-        if "fast" in kw:  # 为BLF进行多进程优化
-            if kw["fast"] == True:
-                self.res = [[0] * len(self.polys) for i in range(len(self.polys))]
-                for i in range(1, len(self.polys)):
-                    for j in range(0, i):
-                        # 计算nfp(j,i)
-                        # self.res[j][i]=pool.apply_async(getNFP,args=(self.polys[j],self.polys[i]))
-                        self.nfp_list[j][i] = get_slide(
-                            getNFP(self.polys[j], self.polys[i]),
-                            -self.centroid_list[j][0],
-                            -self.centroid_list[j][1],
-                        )
-
     def loadHistory(self):
         if not self.history:
             if not self.history_path:
@@ -98,24 +79,14 @@ class NFPAssistant(object):
 
     # 获得所有的形状
     def getAllNFP(self):
-        nfp_multi = False
-        if nfp_multi == True:
-            tasks = [(main, adjoin) for main in self.polys for adjoin in self.polys]
-            res = pool.starmap(NFP, tasks)
-            for k, item in enumerate(res):
-                i = k // len(self.polys)
-                j = k % len(self.polys)
+        for i, poly1 in enumerate(self.polys):
+            for j, poly2 in enumerate(self.polys):
+                # print(f"##### Get NFP of {i} and {j} #####")
+                nfp = NFP(poly1, poly2).nfp
+                # NFP(poly1, poly2).showResult()
                 self.nfp_list[i][j] = get_slide(
-                    item.nfp, -self.centroid_list[i][0], -self.centroid_list[i][1]
+                    nfp, -self.centroid_list[i][0], -self.centroid_list[i][1]
                 )
-        else:
-            for i, poly1 in enumerate(self.polys):
-                for j, poly2 in enumerate(self.polys):
-                    nfp = NFP(poly1, poly2).nfp
-                    # NFP(poly1, poly2).showResult()
-                    self.nfp_list[i][j] = get_slide(
-                        nfp, -self.centroid_list[i][0], -self.centroid_list[i][1]
-                    )
         if self.store_nfp == True:
             self.storeNFP()
 

@@ -30,9 +30,6 @@ class NFP(object):
         self.start = True  # 判断是否初始
         self.nfp = []
         self.rectangle = False
-        if "rectangle" in kw:
-            if kw["rectangle"] == True:
-                self.rectangle = True
         self.error = 1
         self.main()
         if "show" in kw:
@@ -54,23 +51,22 @@ class NFP(object):
             self.nfp.append([self.stationary[3][0], self.stationary[3][1] + height])
         else:
             while self.judgeEnd() == False and i < 75:  # 大于等于75会自动退出的，一般情况是计算出错
-                # print("########第", i, "轮##########")
                 touching_edges = self.detectTouching()
                 all_vectors = self.potentialVector(touching_edges)
                 if len(all_vectors) == 0:
-                    print("没有可行向量")
+                    print(f"没有可行向量, 第{i}轮")
                     self.error = -2  # 没有可行向量
                     break
 
                 vector = self.feasibleVector(all_vectors, touching_edges)
                 if vector == []:
-                    print("没有计算出可行向量")
+                    print(f"没有计算出可行向量, 第{i}轮")
                     self.error = -5  # 没有计算出可行向量
                     break
 
                 self.trimVector(vector)
                 if vector == [0, 0]:
-                    print("未进行移动")
+                    print(f"未进行移动, 第{i}轮")
                     self.error = -3  # 未进行移动
                     break
 
@@ -87,7 +83,6 @@ class NFP(object):
                     print(f"出现相交区域, 第{i}轮")
                     self.error = -4  # 出现相交区域
                     break
-
         if i == 75:
             print("超出计算次数")
             self.error = -1  # 超出计算次数
@@ -244,7 +239,7 @@ class NFP(object):
                 if vector12_product == 0:
                     inter = new_line_inter(touching["edge1"], touching["edge2"])
                     if inter["geom_type"] == "LineString":
-                        if inter["length"] > 0.01:
+                        if inter["length"] > BIAS:
                             # 如果有相交，则需要在左侧
                             if (
                                 touching["orbiting_start"] == True
@@ -284,11 +279,11 @@ class NFP(object):
                     inter_mapping = mapping(inter)
                     inter_coor = inter_mapping["coordinates"]
                     if (
-                        abs(end_pt[0] - inter_coor[0]) > 0.01
-                        or abs(end_pt[1] - inter_coor[1]) > 0.01
+                        abs(end_pt[0] - inter_coor[0]) > BIAS
+                        or abs(end_pt[1] - inter_coor[1]) > BIAS
                     ) and (
-                        abs(pt[0] - inter_coor[0]) > 0.01
-                        or abs(pt[1] - inter_coor[1]) > 0.01
+                        abs(pt[0] - inter_coor[0]) > BIAS
+                        or abs(pt[1] - inter_coor[1]) > BIAS
                     ):
                         new_vectors.append(
                             [inter_coor[0] - pt[0], inter_coor[1] - pt[1]]
@@ -304,17 +299,15 @@ class NFP(object):
                     inter_mapping = mapping(inter)
                     inter_coor = inter_mapping["coordinates"]
                     if (
-                        abs(end_pt[0] - inter_coor[0]) > 0.01
-                        or abs(end_pt[1] - inter_coor[1]) > 0.01
+                        abs(end_pt[0] - inter_coor[0]) > BIAS
+                        or abs(end_pt[1] - inter_coor[1]) > BIAS
                     ) and (
-                        abs(pt[0] - inter_coor[0]) > 0.01
-                        or abs(pt[1] - inter_coor[1]) > 0.01
+                        abs(pt[0] - inter_coor[0]) > BIAS
+                        or abs(pt[1] - inter_coor[1]) > BIAS
                     ):
                         new_vectors.append(
                             [pt[0] - inter_coor[0], pt[1] - inter_coor[1]]
                         )
-
-        # print(new_vectors)
         for vec in new_vectors:
             if abs(vec[0]) < abs(vector[0]) or abs(vec[1]) < abs(vector[1]):
                 # print(vec)
