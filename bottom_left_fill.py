@@ -34,9 +34,6 @@ class BottomLeftFill(object):
         self.contain_length = 2000
         self.polygons = original_polygons
         self.nfp_assistant = nfp_assistant
-        self.vertical = False
-        if "vertical" in kw:
-            self.vertical = kw["vertical"]
 
         print("Total Num:", len(original_polygons))
         self.placeFirstPoly()
@@ -52,11 +49,7 @@ class BottomLeftFill(object):
 
     def placePoly(self, index):
         adjoin = self.polygons[index]
-        # 是否垂直
-        if self.vertical == True:
-            ifr = get_inner_fit_rectangle(self.polygons[index], self.width, self.length)
-        else:
-            ifr = get_inner_fit_rectangle(self.polygons[index], self.length, self.width)
+        ifr = get_inner_fit_rectangle(self.polygons[index], self.length, self.width)
         differ_region = Polygon(ifr)
 
         for main_index in range(0, index):
@@ -79,21 +72,16 @@ class BottomLeftFill(object):
         slide_to_point(
             self.polygons[index], adjoin[refer_pt_index], differ[differ_index]
         )
-        self.showPolys(self.polygons[: index + 1])
+        # self.showPolys(self.polygons[: index + 1])
 
     def getBottomLeft(self, poly):
-        """
-        获得左底部点，优先左侧，有多个左侧选择下方
-        """
+        # 获得左底部点，优先左侧，有多个左侧选择下方
         bl = []  # bottom left的全部点
         _min = 999999
         # 选择最左侧的点
         for i, pt in enumerate(poly):
             pt_object = {"index": i, "x": pt[0], "y": pt[1]}
-            if self.vertical == True:
-                target = pt[1]
-            else:
-                target = pt[0]
+            target = pt[0]
             if target < _min:
                 _min = target
                 bl = [pt_object]
@@ -102,10 +90,7 @@ class BottomLeftFill(object):
         if len(bl) == 1:
             return bl[0]["index"]
         else:
-            if self.vertical == True:
-                target = "x"
-            else:
-                target = "y"
+            target = "y"
             _min = bl[0][target]
             one_pt = bl[0]
             for pt_index in range(1, len(bl)):
@@ -135,12 +120,8 @@ class BottomLeftFill(object):
     def getLength(self):
         _max = 0
         for i in range(0, len(self.polygons)):
-            if self.vertical == True:
-                extreme_index = check_top(self.polygons[i])
-                extreme = self.polygons[i][extreme_index][1]
-            else:
-                extreme_index = check_right(self.polygons[i])
-                extreme = self.polygons[i][extreme_index][0]
+            extreme_index = check_right(self.polygons[i])
+            extreme = self.polygons[i][extreme_index][0]
             if extreme > _max:
                 _max = extreme
         self.contain_length = _max
@@ -149,7 +130,7 @@ class BottomLeftFill(object):
 
 
 if __name__ == "__main__":
-    df = pd.read_csv("data/problem.csv")
+    df = pd.read_csv("data/problem_5f.csv")
     # Get polygons repeated by their corresponding num value
     polygons = []
     for _, row in df.iterrows():
@@ -166,7 +147,6 @@ if __name__ == "__main__":
         width=1200,
         length=10000,
         original_polygons=scaled_polygons,
-        vertical=False,
         nfp_assistant=nfp_assistant,
     )
     end_time = datetime.now()
