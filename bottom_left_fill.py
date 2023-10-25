@@ -1,5 +1,6 @@
 import json
 import pandas as pd
+import warnings
 from datetime import datetime
 from nfp_assistant import NFPAssistant
 from shapely.geometry import Polygon
@@ -14,6 +15,15 @@ from util.polygon_util import (
     slide_poly,
     slide_to_point,
 )
+
+
+def warning_to_exception(message, category, filename, lineno, file=None, line=None):
+    if "没有可行向量" in str(message):
+        raise category(message)
+
+
+# 可用于捕获异常
+warnings.showwarning = warning_to_exception
 
 
 class BottomLeftFill(object):
@@ -69,7 +79,7 @@ class BottomLeftFill(object):
         slide_to_point(
             self.polygons[index], adjoin[refer_pt_index], differ[differ_index]
         )
-        # self.showPolys(self.polygons[: index + 1])
+        self.showPolys(self.polygons[: index + 1])
 
     def getBottomLeft(self, poly):
         """
@@ -139,7 +149,7 @@ class BottomLeftFill(object):
 
 
 if __name__ == "__main__":
-    df = pd.read_csv("data/test_rotated_sorted.csv")
+    df = pd.read_csv("data/problem.csv")
     # Get polygons repeated by their corresponding num value
     polygons = []
     for _, row in df.iterrows():
@@ -147,13 +157,13 @@ if __name__ == "__main__":
         polygon = json.loads(row["polygon"])
         for _ in range(num):
             polygons.append(polygon)
-    scaled_polygons = [scale_polygon(polygon, 0.5) for polygon in polygons]
+    scaled_polygons = [scale_polygon(polygon, 1) for polygon in polygons]
     start_time = datetime.now()
     nfp_assistant = NFPAssistant(
         polys=scaled_polygons, store_nfp=True, get_all_nfp=True, load_history=False
     )
     bfl = BottomLeftFill(
-        width=600,
+        width=1200,
         length=10000,
         original_polygons=scaled_polygons,
         vertical=False,
