@@ -1,0 +1,2 @@
+BIAS = 0.0001
+PRECISION = 5
