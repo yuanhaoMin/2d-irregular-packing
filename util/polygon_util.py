@@ -1,17 +1,15 @@
 import numpy as np
-
-from constant.calculation_constants import BIAS
 from shapely.geometry import LineString, mapping, Polygon
 
 
-def almost_contain(line, point):
+def almost_contain(line, point, bias):
     # 会由于int导致计算偏差！！！！！！
     pt1 = [line[0][0], line[0][1]]
     pt2 = [line[1][0], line[1][1]]
     point = [point[0], point[1]]
 
     # 水平直线情况：通过比较两个点和中间点比较
-    if abs(pt1[1] - point[1]) < BIAS and abs(pt2[1] - point[1]) < BIAS:
+    if abs(pt1[1] - point[1]) < bias and abs(pt2[1] - point[1]) < bias:
         # print("水平情况")
         if (pt1[0] - point[0]) * (pt2[0] - point[0]) < 0:
             return True
@@ -19,7 +17,7 @@ def almost_contain(line, point):
             return False
 
     # 排除垂直的情况
-    if abs(pt1[0] - point[0]) < BIAS and abs(pt2[0] - point[0]) < BIAS:
+    if abs(pt1[0] - point[0]) < bias and abs(pt2[0] - point[0]) < bias:
         # print("垂直情况")
         if (pt1[1] - point[1]) * (pt2[1] - point[1]) < 0:
             return True
@@ -27,20 +25,19 @@ def almost_contain(line, point):
             return False
 
     if (
-        abs(pt1[0] - point[0]) < BIAS
-        or abs(pt2[0] - point[0]) < BIAS
-        or abs(pt1[0] - pt2[0]) < BIAS
+        abs(pt1[0] - point[0]) < bias
+        or abs(pt2[0] - point[0]) < bias
+        or abs(pt1[0] - pt2[0]) < bias
     ):
         return False
 
     # 正常情况，计算弧度的差值
     arc1 = np.arctan((line[0][1] - line[1][1]) / (line[0][0] - line[1][0]))
     arc2 = np.arctan((point[1] - line[1][1]) / (point[0] - line[1][0]))
-    if abs(arc1 - arc2) < BIAS:  # 原值0.03，dighe近似平行修正为0.01
+    if abs(arc1 - arc2) < bias:  # 原值0.03，dighe近似平行修正为0.01, 使用bias减少报错
         if (point[1] - pt1[1]) * (pt2[1] - point[1]) > 0 and (point[0] - pt1[0]) * (
             pt2[0] - point[0]
         ) > 0:
-            # print("一般情况")
             return True
         else:
             return False
@@ -48,8 +45,8 @@ def almost_contain(line, point):
         return False
 
 
-def almost_equal(point1, point2):
-    if abs(point1[0] - point2[0]) < BIAS and abs(point1[1] - point2[1]) < BIAS:
+def almost_equal(point1, point2, bias):
+    if abs(point1[0] - point2[0]) < bias and abs(point1[1] - point2[1]) < bias:
         return True
     else:
         return False
@@ -132,14 +129,14 @@ def copy_poly(poly):
     return new_poly
 
 
-def cross_product(vec1, vec2):
+def cross_product(vec1, vec2, bias):
     res = vec1[0] * vec2[1] - vec1[1] * vec2[0]
     # 最简单的计算
-    if abs(res) < BIAS:
+    if abs(res) < bias:
         return 0
     # 部分情况叉积很大但是仍然基本平行
-    if abs(vec1[0]) > BIAS and abs(vec2[0]) > BIAS:
-        if abs(vec1[1] / vec1[0] - vec2[1] / vec2[0]) < BIAS:
+    if abs(vec1[0]) > bias and abs(vec2[0]) > bias:
+        if abs(vec1[1] / vec1[0] - vec2[1] / vec2[0]) < bias:
             return 0
     return res
 
@@ -161,9 +158,7 @@ def get_poly_edges(poly):
 
 
 def get_slide(poly, x, y):
-    """
-    获得平移后的情况
-    """
+    # 获得平移后的情况
     new_vertex = []
     for point in poly:
         new_point = [point[0] + x, point[1] + y]
@@ -172,7 +167,7 @@ def get_slide(poly, x, y):
 
 
 # 用于touching计算交点 可以与另一个交点计算函数合并
-def intersection(line1, line2):
+def intersection(line1, line2, bias):
     # 如果可以直接计算出交点
     Line1 = LineString(line1)
     Line2 = LineString(line2)
@@ -188,18 +183,17 @@ def intersection(line1, line2):
     res = []
     for pt1 in line1:
         for pt2 in line2:
-            if almost_equal(pt1, pt2) == True:
-                # print("pt1,pt2:",pt1,pt2)
+            if almost_equal(pt1, pt2, bias) == True:
                 res = pt1
     if res != []:
         return res
 
     # 计算是否存在almostContain
     for pt in line1:
-        if almost_contain(line2, pt) == True:
+        if almost_contain(line2, pt, bias) == True:
             return pt
     for pt in line2:
-        if almost_contain(line1, pt) == True:
+        if almost_contain(line1, pt, bias) == True:
             return pt
     return []
 
@@ -229,10 +223,10 @@ def line_to_vec(edge):
 
 
 # 主要用于判断是否有直线重合 过于复杂需要重构
-def new_line_inter(line1, line2):
+def new_line_inter(line1, line2, bias):
     vec1 = line_to_vec(line1)
     vec2 = line_to_vec(line2)
-    vec12_product = cross_product(vec1, vec2)
+    vec12_product = cross_product(vec1, vec2, bias)
     Line1 = LineString(line1)
     Line2 = LineString(line2)
     inter = {"length": 0, "geom_type": None}
@@ -244,26 +238,26 @@ def new_line_inter(line1, line2):
         if vec1[0] * vec2[0] < 0 or vec1[1] * vec2[1] < 0:
             new_line2 = reverse_line(new_line2)
         # 如果存在顶点相等，则选择其中一个
-        if almost_equal(new_line1[0], new_line2[0]) or almost_equal(
-            new_line1[1], new_line2[1]
+        if almost_equal(new_line1[0], new_line2[0], bias) or almost_equal(
+            new_line1[1], new_line2[1], bias
         ):
             inter["length"] = min(Line1.length, Line2.length)
             inter["geom_type"] = "LineString"
             return inter
         # 排除只有顶点相交情况
-        if almost_equal(new_line1[0], new_line2[1]):
+        if almost_equal(new_line1[0], new_line2[1], bias):
             inter["length"] = new_line2[1]
             inter["geom_type"] = "Point"
             return inter
-        if almost_equal(new_line1[1], new_line2[0]):
+        if almost_equal(new_line1[1], new_line2[0], bias):
             inter["length"] = new_line1[1]
             inter["geom_type"] = "Point"
             return inter
         # 否则判断是否包含
-        line1_contain_line2_pt0 = almost_contain(new_line1, new_line2[0])
-        line1_contain_line2_pt1 = almost_contain(new_line1, new_line2[1])
-        line2_contain_line1_pt0 = almost_contain(new_line2, new_line1[0])
-        line2_contain_line1_pt1 = almost_contain(new_line2, new_line1[1])
+        line1_contain_line2_pt0 = almost_contain(new_line1, new_line2[0], bias)
+        line1_contain_line2_pt1 = almost_contain(new_line1, new_line2[1], bias)
+        line2_contain_line1_pt0 = almost_contain(new_line2, new_line1[0], bias)
+        line2_contain_line1_pt1 = almost_contain(new_line2, new_line1[1], bias)
         # Line1直接包含Line2
         if line1_contain_line2_pt0 and line1_contain_line2_pt1:
             inter["length"] = Line1.length

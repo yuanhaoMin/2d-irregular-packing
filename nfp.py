@@ -1,5 +1,4 @@
 import copy
-from constant.calculation_constants import BIAS
 from shapely.geometry import Polygon, Point, mapping, LineString
 from show import PltFunc
 from util.polygon_util import (
@@ -18,7 +17,8 @@ from util.polygon_util import (
 
 
 class NFP(object):
-    def __init__(self, poly1, poly2, **kw):
+    def __init__(self, poly1, poly2, bias):
+        self.bias = bias
         self.stationary = copy.deepcopy(poly1)
         self.sliding = copy.deepcopy(poly2)
         start_point_index = check_bottom(self.stationary)
@@ -30,15 +30,12 @@ class NFP(object):
         self.start = True  # 判断是否初始
         self.nfp = []
         self.rectangle = False
-        self.error = 1
-        self.main()
-        if "show" in kw:
-            if kw["show"] == True:
-                self.showResult()
+        self.error_msg = ""
+        self.calculate()
         # 计算完成之后平移回原始位置
         slide_to_point(self.sliding, self.sliding[self.locus_index], self.original_top)
 
-    def main(self):
+    def calculate(self):
         i = 0
         if self.rectangle:  # 若矩形则直接快速运算 点的index为左下角开始逆时针旋转
             width = self.sliding[1][0] - self.sliding[0][0]
@@ -54,20 +51,17 @@ class NFP(object):
                 touching_edges = self.detectTouching()
                 all_vectors = self.potentialVector(touching_edges)
                 if len(all_vectors) == 0:
-                    print(f"没有可行向量, 第{i}轮")
-                    self.error = -2  # 没有可行向量
+                    self.error_msg = f"第{i}轮没有可行向量"
                     break
 
                 vector = self.feasibleVector(all_vectors, touching_edges)
                 if vector == []:
-                    print(f"没有计算出可行向量, 第{i}轮")
-                    self.error = -5  # 没有计算出可行向量
+                    self.error_msg = f"第{i}轮没有计算出可行向量"
                     break
 
                 self.trimVector(vector)
                 if vector == [0, 0]:
-                    print(f"未进行移动, 第{i}轮")
-                    self.error = -3  # 未进行移动
+                    self.error_msg = f"第{i}轮未进行移动"
                     break
 
                 slide_poly(self.sliding, vector[0], vector[1])
@@ -80,12 +74,10 @@ class NFP(object):
                 i = i + 1
                 inter = Polygon(self.sliding).intersection(Polygon(self.stationary))
                 if compute_inter_area(inter) > 1:
-                    print(f"出现相交区域, 第{i}轮")
-                    self.error = -4  # 出现相交区域
+                    self.error_msg = f"第{i}轮出现相交区域"
                     break
         if i == 75:
-            print("超出计算次数")
-            self.error = -1  # 超出计算次数
+            self.error_msg = "超出计算次数"
 
     # 检测相互的连接情况
     def detectTouching(self):
@@ -93,17 +85,23 @@ class NFP(object):
         stationary_edges, sliding_edges = self.getAllEdges()
         for edge1 in stationary_edges:
             for edge2 in sliding_edges:
-                inter = intersection(edge1, edge2)
+                inter = intersection(edge1, edge2, self.bias)
                 if inter != []:
                     inter_pt = [inter[0], inter[1]]  # 交叉点
-                    edge1_bound = almost_equal(edge1[0], inter_pt) or almost_equal(
-                        edge1[1], inter_pt
+                    edge1_bound = almost_equal(
+                        edge1[0], inter_pt, self.bias
+                    ) or almost_equal(
+                        edge1[1], inter_pt, self.bias
                     )  # 是否为边界
-                    edge2_bound = almost_equal(edge2[0], inter_pt) or almost_equal(
-                        edge2[1], inter_pt
+                    edge2_bound = almost_equal(
+                        edge2[0], inter_pt, self.bias
+                    ) or almost_equal(
+                        edge2[1], inter_pt, self.bias
                     )  # 是否为边界
-                    stationary_start = almost_equal(edge1[0], inter_pt)  # 是否开始
-                    orbiting_start = almost_equal(edge2[0], inter_pt)  # 是否开始
+                    stationary_start = almost_equal(
+                        edge1[0], inter_pt, self.bias
+                    )  # 是否开始
+                    orbiting_start = almost_equal(edge2[0], inter_pt, self.bias)  # 是否开始
                     touch_edges.append(
                         {
                             "edge1": edge1,
@@ -124,7 +122,6 @@ class NFP(object):
     def potentialVector(self, touching_edges):
         all_vectors = []
         for touching in touching_edges:
-            # print("touching:",touching)
             aim_edge = []
             # 情况1
             if touching["edge1_bound"] == True and touching["edge2_bound"] == True:
@@ -179,7 +176,7 @@ class NFP(object):
 
     def detectExisting(self, vectors, judge_vector):
         for vector in vectors:
-            if almost_equal(vector, judge_vector):
+            if almost_equal(vector, judge_vector, self.bias):
                 return True
         return False
 
@@ -188,14 +185,10 @@ class NFP(object):
 
     # 选择可行向量
     def feasibleVector(self, all_vectors, touching_edges):
-        """
-        该段代码需要重构，过于复杂
-        """
+        # 该段代码需要重构，过于复杂
         res_vector = []
-        # print("\nall_vectors:",all_vectors)
         for vector in all_vectors:
             feasible = True
-            # print("\nvector:",vector,"\n")
             for touching in touching_edges:
                 vector1 = []
                 vector2 = []
@@ -209,13 +202,13 @@ class NFP(object):
                 else:
                     vector2 = [-touching["vector2"][0], -touching["vector2"][1]]
                 vector12_product = cross_product(
-                    vector1, vector2
+                    vector1, vector2, self.bias
                 )  # 叉积，大于0在左侧，小于0在右侧，等于0平行
                 vector_vector1_product = cross_product(
-                    vector1, vector
+                    vector1, vector, self.bias
                 )  # 叉积，大于0在左侧，小于0在右侧，等于0平行
                 vector_vector2_product = cross_product(
-                    vector2, vector
+                    vector2, vector, self.bias
                 )  # 叉积，大于0在左侧，小于0在右侧，等于0平行
                 # 最后两种情况
                 if (
@@ -237,9 +230,11 @@ class NFP(object):
                         feasible = False
                 # 平行情况，需要用原值逐一判断
                 if vector12_product == 0:
-                    inter = new_line_inter(touching["edge1"], touching["edge2"])
+                    inter = new_line_inter(
+                        touching["edge1"], touching["edge2"], self.bias
+                    )
                     if inter["geom_type"] == "LineString":
-                        if inter["length"] > BIAS:
+                        if inter["length"] > self.bias:
                             # 如果有相交，则需要在左侧
                             if (
                                 touching["orbiting_start"] == True
@@ -279,11 +274,11 @@ class NFP(object):
                     inter_mapping = mapping(inter)
                     inter_coor = inter_mapping["coordinates"]
                     if (
-                        abs(end_pt[0] - inter_coor[0]) > BIAS
-                        or abs(end_pt[1] - inter_coor[1]) > BIAS
+                        abs(end_pt[0] - inter_coor[0]) > self.bias
+                        or abs(end_pt[1] - inter_coor[1]) > self.bias
                     ) and (
-                        abs(pt[0] - inter_coor[0]) > BIAS
-                        or abs(pt[1] - inter_coor[1]) > BIAS
+                        abs(pt[0] - inter_coor[0]) > self.bias
+                        or abs(pt[1] - inter_coor[1]) > self.bias
                     ):
                         new_vectors.append(
                             [inter_coor[0] - pt[0], inter_coor[1] - pt[1]]
@@ -299,18 +294,17 @@ class NFP(object):
                     inter_mapping = mapping(inter)
                     inter_coor = inter_mapping["coordinates"]
                     if (
-                        abs(end_pt[0] - inter_coor[0]) > BIAS
-                        or abs(end_pt[1] - inter_coor[1]) > BIAS
+                        abs(end_pt[0] - inter_coor[0]) > self.bias
+                        or abs(end_pt[1] - inter_coor[1]) > self.bias
                     ) and (
-                        abs(pt[0] - inter_coor[0]) > BIAS
-                        or abs(pt[1] - inter_coor[1]) > BIAS
+                        abs(pt[0] - inter_coor[0]) > self.bias
+                        or abs(pt[1] - inter_coor[1]) > self.bias
                     ):
                         new_vectors.append(
                             [pt[0] - inter_coor[0], pt[1] - inter_coor[1]]
                         )
         for vec in new_vectors:
             if abs(vec[0]) < abs(vector[0]) or abs(vec[1]) < abs(vector[1]):
-                # print(vec)
                 vector[0] = vec[0]
                 vector[1] = vec[1]
 
@@ -323,8 +317,8 @@ class NFP(object):
         sliding_locus = self.sliding[self.locus_index]
         main_bt = self.start_point
         if (
-            abs(sliding_locus[0] - main_bt[0]) < BIAS
-            and abs(sliding_locus[1] - main_bt[1]) < BIAS
+            abs(sliding_locus[0] - main_bt[0]) < self.bias
+            and abs(sliding_locus[1] - main_bt[1]) < self.bias
         ):
             if self.start == True:
                 self.start = False

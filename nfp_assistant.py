@@ -77,20 +77,29 @@ class NFPAssistant(object):
                 return -1
             return index[0]  # 一般情况就只有一个了
 
-    # 获得所有的形状
     def getAllNFP(self):
-        for i, poly1 in enumerate(self.polys):
-            for j, poly2 in enumerate(self.polys):
-                nfp_object = NFP(poly1, poly2)
-                if nfp_object.error < 0:
-                    print(f"Error happened in NFP calculation for poly {i} and {j}")
-                nfp = nfp_object.nfp
-                # NFP(poly1, poly2).showResult()
+        for i in range(len(self.polys)):
+            for j in range(len(self.polys)):
+                nfp = self.tryCreateNFP(i, j)
                 self.nfp_list[i][j] = get_slide(
                     nfp, -self.centroid_list[i][0], -self.centroid_list[i][1]
                 )
         if self.store_nfp == True:
             self.storeNFP()
+
+    def tryCreateNFP(self, i, j):
+        bias_values = [1e-4, 7e-5, 4e-5, 1e-5]
+        poly1 = self.polys[i]
+        poly2 = self.polys[j]
+        for bias in bias_values:
+            nfp_object = NFP(poly1, poly2, bias=bias)
+            if not nfp_object.error_msg:
+                # nfp_object.showResult()
+                return nfp_object.nfp
+            else:
+                print(f"多边形索引{i}和{j}, bias={bias} 遇到错误: {nfp_object.error_msg}")
+                continue
+        raise Exception(f"bias值均无法计算多边形索引{i}和{j}的NFP")
 
     def storeNFP(self):
         if self.store_path == None:

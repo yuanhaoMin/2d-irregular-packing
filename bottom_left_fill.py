@@ -33,7 +33,7 @@ class BottomLeftFill(object):
         self.length = 150000  # 代表长度
         self.contain_length = 2000
         self.polygons = original_polygons
-        self.nfp_assistant = nfp_assistant
+        self.nfp_assistant: NFPAssistant = nfp_assistant
 
         print("Total Num:", len(original_polygons))
         self.placeFirstPoly()
