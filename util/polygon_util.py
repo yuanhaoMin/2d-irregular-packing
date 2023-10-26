@@ -1,6 +1,6 @@
 import numpy as np
 
-from constant.polygon_constants import BIAS
+from constant.calculation_constants import BIAS
 from shapely.geometry import LineString, mapping, Polygon
 
 

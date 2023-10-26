@@ -1,5 +1,5 @@
 import copy
-from constant.polygon_constants import BIAS
+from constant.calculation_constants import BIAS
 from shapely.geometry import Polygon, Point, mapping, LineString
 from show import PltFunc
 from util.polygon_util import (

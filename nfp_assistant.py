@@ -5,7 +5,7 @@ import pandas as pd
 from nfp import NFP
 from shapely.geometry import Polygon
 from util.array_util import delete_redundancy, get_index_multi
-from util.polygon_util import get_point, get_slide, slide_poly
+from util.polygon_util import get_point, get_slide
 
 
 class NFPAssistant(object):
@@ -81,8 +81,10 @@ class NFPAssistant(object):
     def getAllNFP(self):
         for i, poly1 in enumerate(self.polys):
             for j, poly2 in enumerate(self.polys):
-                # print(f"##### Get NFP of {i} and {j} #####")
-                nfp = NFP(poly1, poly2).nfp
+                nfp_object = NFP(poly1, poly2)
+                if nfp_object.error < 0:
+                    print(f"Error happened in NFP calculation for poly {i} and {j}")
+                nfp = nfp_object.nfp
                 # NFP(poly1, poly2).showResult()
                 self.nfp_list[i][j] = get_slide(
                     nfp, -self.centroid_list[i][0], -self.centroid_list[i][1]
