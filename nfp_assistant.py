@@ -21,8 +21,6 @@ class NFPAssistant(object):
             self.first_vec_list.append(
                 [poly[1][0] - poly[0][0], poly[1][1] - poly[0][1]]
             )
-            self.centroid_list = np.round(self.centroid_list, PRECISION).tolist()
-            self.first_vec_list = np.round(self.first_vec_list, PRECISION).tolist()
         self.nfp_list = [[0] * len(self.polys) for i in range(len(self.polys))]
         self.load_history = False
         self.history_path = None

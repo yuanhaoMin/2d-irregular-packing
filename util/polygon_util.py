@@ -1,9 +1,9 @@
 import numpy as np
-from constant.calculation_constants import BIAS, PRECISION
+
+from constant.calculation_constants import BIAS
 from shapely.geometry import LineString, mapping, Polygon
 
 
-# TODO: 使用标准库
 def almost_contain(line, point):
     # 会由于int导致计算偏差！！！！！！
     pt1 = [line[0][0], line[0][1]]
@@ -11,21 +11,26 @@ def almost_contain(line, point):
     point = [point[0], point[1]]
 
     # 水平直线情况：通过比较两个点和中间点比较
-    if (pt1[1] == point[1]) and (pt2[1] == point[1]):
+    if abs(pt1[1] - point[1]) < BIAS and abs(pt2[1] - point[1]) < BIAS:
+        # print("水平情况")
         if (pt1[0] - point[0]) * (pt2[0] - point[0]) < 0:
             return True
         else:
             return False
 
     # 排除垂直的情况
-    if (pt1[0] == point[0]) and (pt2[0] == point[0]):
+    if abs(pt1[0] - point[0]) < BIAS and abs(pt2[0] - point[0]) < BIAS:
         # print("垂直情况")
         if (pt1[1] - point[1]) * (pt2[1] - point[1]) < 0:
             return True
         else:
             return False
 
-    if (pt1[0] == point[0]) or (pt2[0] == point[0]) or (pt1[0] == pt2[0]):
+    if (
+        abs(pt1[0] - point[0]) < BIAS
+        or abs(pt2[0] - point[0]) < BIAS
+        or abs(pt1[0] - pt2[0]) < BIAS
+    ):
         return False
 
     # 正常情况，计算弧度的差值
@@ -183,7 +188,8 @@ def intersection(line1, line2):
     res = []
     for pt1 in line1:
         for pt2 in line2:
-            if pt1 == pt2:
+            if almost_equal(pt1, pt2) == True:
+                # print("pt1,pt2:",pt1,pt2)
                 res = pt1
     if res != []:
         return res
@@ -314,8 +320,8 @@ def scale_polygon(polygon, scale_factor):
 
 def slide_poly(poly, x, y):
     for point in poly:
-        point[0] = np.round(point[0] + x, PRECISION)
-        point[1] = np.round(point[1] + y, PRECISION)
+        point[0] = point[0] + x
+        point[1] = point[1] + y
 
 
 def slide_to_point(poly, pt1, pt2):
