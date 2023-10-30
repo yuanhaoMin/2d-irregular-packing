@@ -91,15 +91,19 @@ class NFPAssistant(object):
         bias_values = [1e-4, 7e-5, 4e-5, 1e-5]
         poly1 = self.polys[i]
         poly2 = self.polys[j]
-        for bias in bias_values:
+        for bias_idx, bias in enumerate(bias_values):
             nfp_object = NFP(poly1, poly2, bias=bias)
             if not nfp_object.error_msg:
                 # nfp_object.showResult()
                 return nfp_object.nfp
             else:
-                print(f"多边形索引{i}和{j}, bias={bias} 遇到错误: {nfp_object.error_msg}")
-                continue
-        raise Exception(f"bias值均无法计算多边形索引{i}和{j}的NFP")
+                print(f"多边形索引{i}和{j}, {nfp_object.error_msg}.", end=" ")
+                if(bias_idx==len(bias_values)-1):
+                    raise Exception(f"bias值均无法计算多边形索引{i}和{j}的NFP")
+                else:
+                    print(f"bias调整: {bias} -> {bias_values[bias_idx+1]}")
+                    continue
+        
 
     def storeNFP(self):
         if self.store_path == None:
