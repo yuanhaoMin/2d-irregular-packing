@@ -9,7 +9,7 @@ from util.polygon_util import get_point, get_slide
 
 
 class NFPAssistant(object):
-    def __init__(self, polys, **kw):
+    def __init__(self, polys, load_history):
         self.polys = delete_redundancy(copy.deepcopy(polys))
         self.area_list, self.first_vec_list, self.centroid_list = [], [], []  # 作为参考
         for poly in self.polys:
@@ -20,48 +20,21 @@ class NFPAssistant(object):
                 [poly[1][0] - poly[0][0], poly[1][1] - poly[0][1]]
             )
         self.nfp_list = [[0] * len(self.polys) for i in range(len(self.polys))]
-        self.load_history = False
-        self.history_path = None
-        self.history = None
-        if "history_path" in kw:
-            self.history_path = kw["history_path"]
 
-        if "load_history" in kw:
-            if kw["load_history"] == True:
-                # 从内存中加载history 直接传递pandas的df对象 缩短I/O时间
-                if "history" in kw:
-                    self.history = kw["history"]
-                self.load_history = True
-                self.loadHistory()
-
-        self.store_nfp = False
-        if "store_nfp" in kw:
-            if kw["store_nfp"] == True:
-                self.store_nfp = True
-
-        self.store_path = None
-        if "store_path" in kw:
-            self.store_path = kw["store_path"]
-
-        if "get_all_nfp" in kw:
-            if kw["get_all_nfp"] == True and self.load_history == False:
-                self.getAllNFP()
+        if load_history:
+            self.loadHistory()
+        else:
+            self.getAllNFP()
+            self.storeNFP()
 
     def loadHistory(self):
-        if not self.history:
-            if not self.history_path:
-                path = "history/nfp.csv"
-            else:
-                path = self.history_path
-            df = pd.read_csv(path, header=None)
-        else:
-            df = self.history
+        path = "history/nfp.csv"
+        df = pd.read_csv(path, header=None)
         for index in range(df.shape[0]):
             i = self.getPolyIndex(json.loads(df[0][index]))
             j = self.getPolyIndex(json.loads(df[1][index]))
             if i >= 0 and j >= 0:
                 self.nfp_list[i][j] = json.loads(df[2][index])
-        # print(self.nfp_list)
 
     # 获得一个形状的index
     def getPolyIndex(self, target):
@@ -84,8 +57,6 @@ class NFPAssistant(object):
                 self.nfp_list[i][j] = get_slide(
                     nfp, -self.centroid_list[i][0], -self.centroid_list[i][1]
                 )
-        if self.store_nfp == True:
-            self.storeNFP()
 
     def tryCreateNFP(self, i, j):
         bias_values = [1e-4, 7e-5, 4e-5, 1e-5]
@@ -98,18 +69,14 @@ class NFPAssistant(object):
                 return nfp_object.nfp
             else:
                 print(f"多边形索引{i}和{j}, {nfp_object.error_msg}.", end=" ")
-                if(bias_idx==len(bias_values)-1):
+                if bias_idx == len(bias_values) - 1:
                     raise Exception(f"bias值均无法计算多边形索引{i}和{j}的NFP")
                 else:
                     print(f"bias调整: {bias} -> {bias_values[bias_idx+1]}")
                     continue
-        
 
     def storeNFP(self):
-        if self.store_path == None:
-            path = "history/nfp.csv"
-        else:
-            path = self.store_path
+        path = "history/nfp.csv"
         with open(path, "a+") as csvfile:
             writer = csv.writer(csvfile)
             for i in range(len(self.polys)):
@@ -132,11 +99,10 @@ class NFPAssistant(object):
         # 判断是否计算过并计算nfp
         if self.nfp_list[i][j] == 0:
             nfp = NFP(poly1, poly2).nfp
-            # self.nfp_list[i][j]=get_slide(nfp,-centroid[0],-centroid[1])
-            if self.store_nfp == True:
-                with open("history/nfp.csv", "a+") as csvfile:
-                    writer = csv.writer(csvfile)
-                    writer.writerows([[poly1, poly2, nfp]])
-            return nfp
+            # if self.store_nfp == True:
+            #    with open("history/nfp.csv", "a+") as csvfile:
+            #        writer = csv.writer(csvfile)
+            #        writer.writerows([[poly1, poly2, nfp]])
+            # return nfp
         else:
             return get_slide(self.nfp_list[i][j], centroid[0], centroid[1])

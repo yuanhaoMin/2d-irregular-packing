@@ -17,20 +17,11 @@ from util.polygon_util import (
 )
 
 
-def warning_to_exception(message, category, filename, lineno, file=None, line=None):
-    if "没有可行向量" in str(message):
-        raise category(message)
-
-
-# 可用于捕获异常
-warnings.showwarning = warning_to_exception
-
-
 class BottomLeftFill(object):
-    def __init__(self, width, original_polygons, nfp_assistant, **kw):
+    def __init__(self, width, original_polygons, nfp_assistant):
         self.choose_nfp = False
         self.width = width
-        self.length = 150000  # 代表长度
+        self.plate_length = 150000  # 代表长度
         self.contain_length = 2000
         self.polygons = original_polygons
         self.nfp_assistant: NFPAssistant = nfp_assistant
@@ -49,7 +40,9 @@ class BottomLeftFill(object):
 
     def placePoly(self, index):
         adjoin = self.polygons[index]
-        ifr = get_inner_fit_rectangle(self.polygons[index], self.length, self.width)
+        ifr = get_inner_fit_rectangle(
+            self.polygons[index], self.plate_length, self.width
+        )
         differ_region = Polygon(ifr)
 
         for main_index in range(0, index):
@@ -64,7 +57,6 @@ class BottomLeftFill(object):
                 for poly in main, adjoin:
                     print(Polygon(poly).area)
                 self.showPolys([main] + [adjoin] + [nfp])
-                print("NFP loaded from: ", self.nfp_assistant.history_path)
 
         differ = poly_to_arr(differ_region)
         differ_index = self.getBottomLeft(differ)
@@ -130,7 +122,7 @@ class BottomLeftFill(object):
 
 
 if __name__ == "__main__":
-    df = pd.read_csv("data/problem_5f.csv")
+    df = pd.read_csv("data/test_rotated_sorted.csv")
     # Get polygons repeated by their corresponding num value
     polygons = []
     for _, row in df.iterrows():
@@ -140,12 +132,9 @@ if __name__ == "__main__":
             polygons.append(polygon)
     scaled_polygons = [scale_polygon(polygon, 1) for polygon in polygons]
     start_time = datetime.now()
-    nfp_assistant = NFPAssistant(
-        polys=scaled_polygons, store_nfp=True, get_all_nfp=True, load_history=False
-    )
+    nfp_assistant = NFPAssistant(polys=scaled_polygons, load_history=False)
     bfl = BottomLeftFill(
         width=1200,
-        length=10000,
         original_polygons=scaled_polygons,
         nfp_assistant=nfp_assistant,
     )
