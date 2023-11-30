@@ -72,7 +72,7 @@ class BottomLeftFill(object):
         slide_to_point(
             self.polygons[index], adjoin[refer_pt_index], differ[differ_index]
         )
-        # self.showPolys(self.polygons[: index + 1])
+        self.showPolys(self.polygons[: index + 1])
 
     def getBottomLeft(self, poly):
         # 获得左底部点，优先左侧，有多个左侧选择下方
@@ -141,7 +141,7 @@ if __name__ == "__main__":
     scaled_polygons = [scale_polygon(polygon, 1) for polygon in polygons]
     start_time = datetime.now()
     nfp_assistant = NFPAssistant(
-        polys=scaled_polygons, store_nfp=True, get_all_nfp=True, load_history=False
+        polys=scaled_polygons, store_nfp=True, get_all_nfp=True, load_history=True
     )
     bfl = BottomLeftFill(
         width=1200,
